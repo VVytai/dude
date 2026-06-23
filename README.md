@@ -27,13 +27,13 @@ A cross-platform GUI utility for finding duplicated files, delete or link them t
 ## Screenshots:
 
 #### GUI usage example:
-![image info](./info/dude.gif)
+![](info/dude.gif)
 #### immediate scanning start with CLI parameters example:
-![image info](./info/cmd.gif)
+![](info/cmd.gif)
 #### scan  dialog:
-![image info](./info/scan.png)
+![](info/scan.png)
 #### settings  dialog:
-![image info](./info/settings.png)
+![](info/settings.png)
 
 ## Download:
 Portable executable packages created with [PyInstaller](https://pyinstaller.org/en/stable) for **Linux** and **Windows** can be downloaded from the [Releases](https://github.com/PJDude/dude/releases) site. At the same time, separate builds are created with the [Nuitka](https://github.com/Nuitka/Nuitka) compiler.
