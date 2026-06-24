@@ -51,6 +51,7 @@ from time import sleep,strftime,time,perf_counter,perf_counter_ns
 import sys
 from sys import exit as sys_exit
 import logging
+from shutil import which as shutil_which
 
 from platform import node
 
@@ -62,9 +63,10 @@ from os.path import abspath,normpath,dirname,join as path_join,isfile as path_is
 from collections import deque
 from psutil import disk_partitions
 
+from subprocess import Popen
+
 #lazyfied
 #from configparser import ConfigParser
-#from subprocess import Popen
 #from shutil import rmtree
 #from PIL import Image, ImageTk
 #from PIL.ImageTk import PhotoImage as ImageTk_PhotoImage
@@ -7168,10 +7170,22 @@ class Gui:
         elif self.sel_kind!=self.CRC:
             self.open_file()
 
+    def system_wrapper(self,to_open):
+        try:
+            if windows:
+                self.status(f'opening: {to_open}')
+                startfile(to_open)
+            else:
+                command=["xdg-open",to_open]
+                command_string=' '.join(command)
+                self.status(f'executing: "{command_string}"')
+                Popen(command,start_new_session=True,env=ENV)
+        except Exception as e:
+            l_error(f'system_wrapper error:{e}')
+            self.status(f'error: {e}')
+
     @logwrapper
     def open_folder(self):
-        from subprocess import Popen
-
         tree=self.sel_tree
 
         params=[]
@@ -7196,14 +7210,12 @@ class Gui:
         elif windows:
             run_command = lambda : startfile(params[0])
         else:
-            run_command = lambda : Popen(["xdg-open",params[0]])
+            run_command = lambda : Popen(["xdg-open",params[0]],start_new_session=True,env=ENV)
 
         Thread(target=run_command,daemon=True).start()
 
     @logwrapper
     def open_file(self):
-        from subprocess import Popen
-
         if self.sel_path_full and self.sel_file:
             file_to_open = sep.join([self.sel_path_full,self.sel_file])
 
@@ -7215,48 +7227,21 @@ class Gui:
                 run_command = lambda : startfile(file_to_open)
             else:
                 self.status('executing: xdg-open "%s"' % file_to_open)
-                run_command = lambda : Popen(["xdg-open",file_to_open])
+                run_command = lambda : Popen(["xdg-open",file_to_open],start_new_session=True,env=ENV)
 
             Thread(target=run_command,daemon=True).start()
 
     @logwrapper
     def show_log(self):
-        try:
-            if windows:
-                self.status('opening: %s' % log)
-                startfile(log)
-            else:
-                self.status('executing: xdg-open "%s"' % log)
-                system("xdg-open "+ '"' + log + '"')
-        except Exception as e:
-            l_error(e)
-            self.status(str(e))
+        self.system_wrapper(log)
 
     @logwrapper
     def show_logs_dir(self):
-        try:
-            if windows:
-                self.status('opening: %s' % LOG_DIR)
-                startfile(LOG_DIR)
-            else:
-                self.status('executing: xdg-open "%s"' % LOG_DIR)
-                system("xdg-open " + '"' + LOG_DIR + '"')
-        except Exception as e:
-            l_error(e)
-            self.status(str(e))
+        self.system_wrapper(LOG_DIR)
 
     @logwrapper
     def show_homepage(self):
-        try:
-            if windows:
-                self.status('opening: %s' % HOMEPAGE)
-                startfile(HOMEPAGE)
-            else:
-                self.status('executing: xdg-open %s' % HOMEPAGE)
-                system("xdg-open " + HOMEPAGE)
-        except Exception as e:
-            l_error(e)
-            self.status(str(e))
+        self.system_wrapper(HOMEPAGE)
 
 if __name__ == "__main__":
     try:
@@ -7318,6 +7303,25 @@ if __name__ == "__main__":
         l_info('DUDE %s',VER_TIMESTAMP)
         l_info('executable: %s',DUDE_EXECUTABLE_FILE)
         #l_debug('DEBUG LEVEL ENABLED')
+
+        if not windows:
+            if shutil_which("xdg-open") is not None:
+                l_info("xdg-open is available")
+            else:
+                l_info("xdg-open is not available")
+
+            ENV = os_environ.copy()
+
+            LD_LIBRARY_PATH_ORIG = ENV.pop("LD_LIBRARY_PATH_ORIG", None)
+
+            if LD_LIBRARY_PATH_ORIG is not None:
+                l_info(f'{LD_LIBRARY_PATH_ORIG=}')
+                ENV["LD_LIBRARY_PATH"] = LD_LIBRARY_PATH_ORIG
+            else:
+                l_info(f'NO LD_LIBRARY_PATH_ORIG')
+                ENV.pop("LD_LIBRARY_PATH", None)
+
+            ENV.pop("LD_PRELOAD", None)
 
         from numpy import __version__ as numpy_version
         from scipy import __version__ as scipy_version
